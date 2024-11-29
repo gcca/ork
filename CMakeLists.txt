@@ -6,16 +6,30 @@ project(
 
 option(ORK_DISABLE_TESTS "Disable tests" OFF)
 
-find_package(Boost REQUIRED COMPONENTS program_options system thread json)
+find_package(Boost REQUIRED COMPONENTS program_options system thread json url)
 find_package(OpenSSL REQUIRED)
 find_package(PostgreSQL REQUIRED)
 
-add_library(ork-certs OBJECT ork/certs.cpp ork/utils.cpp ork/services.cpp)
-target_link_libraries(ork-certs PUBLIC Boost::system Boost::json OpenSSL::SSL)
-
 add_library(
-  ork-lib OBJECT ork/handling.cpp ork/utils.cpp ork/handlers/user/create.cpp
-                 ork/handlers/user/list.cpp)
+  ork-lib OBJECT
+  ork/handlers/gathering/book.cpp
+  ork/handlers/gathering/summary.cpp
+  ork/handlers/model/create.cpp
+  ork/handlers/model/list.cpp
+  ork/handlers/recipe/cook.cpp
+  ork/handlers/recipe/cooks.cpp
+  ork/handlers/recipe/utils.cpp
+  ork/handlers/user/create.cpp
+  ork/handlers/user/list.cpp
+  ork/handlers/user/models.cpp
+  ork/handlers/doc.cpp
+  ork/services/completion.cpp
+  ork/services/completion/certs.cpp
+  ork/services/persistence/pq.cpp
+  ork/conf.cpp
+  ork/errors.cpp
+  ork/handling.cpp
+  ork/server.cpp)
 target_compile_options(
   ork-lib
   PUBLIC -Wall
@@ -48,13 +62,14 @@ target_compile_options(
          -Wno-padded
          -Wno-covered-switch-default
          -Wno-unsafe-buffer-usage)
+target_include_directories(ork-lib PUBLIC ${CMAKE_SOURCE_DIR})
 target_link_libraries(
   ork-lib
-  PUBLIC ork-certs
-         Boost::program_options
+  PUBLIC Boost::program_options
          Boost::system
          Boost::thread
          Boost::json
+         Boost::url
          OpenSSL::SSL
          OpenSSL::Crypto
          PostgreSQL::PostgreSQL)
@@ -77,4 +92,4 @@ add_executable(ork-migration ork-migration.cc)
 target_link_libraries(ork-migration PostgreSQL::PostgreSQL)
 
 add_executable(ork-repl ork-repl.cc)
-target_link_libraries(ork-repl ork-certs)
+target_link_libraries(ork-repl Ork::Ork)

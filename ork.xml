@@ -1,0 +1,17 @@
+<ork>
+  <server>
+    <host>localhost</host>
+    <port>8000</port>
+    <ssl>false</ssl>
+  </server>
+  <database>
+    <host>localhost</host>
+    <port>3306</port>
+    <name>ork</name>
+    <user>root</user>
+    <password></password>
+  </database>
+  <environment>
+    <xai-key>ORK_X_API_KEY</xai-key>
+  </environment>
+</ork>
