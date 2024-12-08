@@ -3,6 +3,7 @@
 
 #include "ork/errors.hpp"
 
+#include "ork/conf.hpp"
 #include "pq.hpp"
 
 namespace ork::services::persistence::pq {
@@ -24,7 +25,7 @@ char *Result::GetValue(std::size_t row, std::size_t column) const noexcept {
   return PQgetvalue(res, static_cast<int>(row), static_cast<int>(column));
 }
 
-Conn::Conn() : pimpl{PQconnectdb("dbname=ork")} {
+Conn::Conn() : pimpl{PQconnectdb(ork::conf::settings->conninfo.c_str())} {
   PGconn *conn = reinterpret_cast<PGconn *>(pimpl);
   if (PQstatus(conn) != CONNECTION_OK) {
     std::cerr << PQerrorMessage(conn) << std::endl;

@@ -6,12 +6,12 @@
   </server>
   <database>
     <host>localhost</host>
-    <port>3306</port>
+    <port>5432</port>
     <name>ork</name>
-    <user>root</user>
-    <password></password>
+    <user>ork</user>
   </database>
   <environment>
     <xai-key>ORK_X_API_KEY</xai-key>
+    <database-password>ORK_DATABASE_PASSWORD</database-password>
   </environment>
 </ork>

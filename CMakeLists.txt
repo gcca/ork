@@ -12,6 +12,9 @@ find_package(PostgreSQL REQUIRED)
 
 add_library(
   ork-lib OBJECT
+  ork/handlers/doc/swagger.cpp
+  ork/handlers/doc/redoc.cpp
+  ork/handlers/doc/yaml.cpp
   ork/handlers/gathering/book.cpp
   ork/handlers/gathering/summary.cpp
   ork/handlers/model/create.cpp
@@ -22,7 +25,6 @@ add_library(
   ork/handlers/user/create.cpp
   ork/handlers/user/list.cpp
   ork/handlers/user/models.cpp
-  ork/handlers/doc.cpp
   ork/services/completion.cpp
   ork/services/completion/certs.cpp
   ork/services/persistence/pq.cpp
@@ -88,8 +90,26 @@ set_target_properties(
 add_executable(ork ork.cc)
 target_link_libraries(ork Ork::Ork)
 
-add_executable(ork-migration ork-migration.cc)
+add_executable(ork-migration ork-migration.cc ork/migration.cpp)
 target_link_libraries(ork-migration PostgreSQL::PostgreSQL)
 
 add_executable(ork-repl ork-repl.cc)
 target_link_libraries(ork-repl Ork::Ork)
+
+if(NOT ORK_DISABLE_TESTS)
+  find_package(GTest REQUIRED)
+  include(GoogleTest)
+  enable_testing()
+
+  add_executable(ork-test ork/migration.cpp ork/testing.cpp
+                          ork/handlers/model/create-test.cc
+                          ork/handlers/model/list-test.cc
+                          ork/handlers/user/create-test.cc
+                          ork/handlers/user/list-test.cc)
+  target_link_libraries(ork-test Ork::Ork GTest::GTest GTest::Main)
+  target_compile_options(ork-test PUBLIC -Wno-c++98-compat-pedantic
+                                         -Wno-global-constructors
+                                         -Wno-weak-vtables)
+
+  gtest_discover_tests(ork-test)
+endif()
