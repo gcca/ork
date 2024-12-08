@@ -90,8 +90,9 @@ void Handler(
                handlers::model::Create, handlers::model::List,
                handlers::recipe::Cook, handlers::recipe::Cooks,
                handlers::user::Create, handlers::user::List,
-               handlers::user::Models, ::Index, handlers::doc::Api,
-               handlers::doc::Doc>::Dispatch(GetPath(req.target()), req, res);
+               handlers::user::Models, ::Index, handlers::doc::Yaml,
+               handlers::doc::Swagger,
+               handlers::doc::Redoc>::Dispatch(GetPath(req.target()), req, res);
   } catch (const ork::errors::ServeError &e) {
     res.result(boost::beast::http::status::bad_request);
     res.body() =

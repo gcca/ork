@@ -48,10 +48,21 @@ static inline std::string GetPtEnv(const char *path,
   if (value)
     return value;
 
-  std::ostringstream oss;
-  oss << "Env " << key << " not set";
+  std::cerr << "Environment variable " << key << " not set." << std::endl;
 
-  throw std::runtime_error{oss.str()};
+  return "";
+}
+
+static inline std::string GetConnInfo(const boost::property_tree::ptree &pt) {
+  std::ostringstream os;
+
+  os << "host=" << pt.get<std::string>("ork.database.host")
+     << " user=" << pt.get<std::string>("ork.database.user")
+     << " dbname=" << pt.get<std::string>("ork.database.name")
+     << " port=" << pt.get<std::string>("ork.database.port")
+     << " password=" << GetPtEnv("ork.environment.database-password", pt);
+
+  return os.str();
 }
 
 namespace ork::conf {
@@ -61,8 +72,9 @@ std::ostream &operator<<(std::ostream &os, const Settings &s) {
      << "\n\t\tbody-limit: " << s.body_limit << "\n\t\tport: " << s.port
      << "\n\t\tssl: " << std::boolalpha << s.ssl
      << "\n\t\tcertificate: " << s.crt << "\n\t\tkey: " << s.key
-     << "\n\tdatabase\n\t\thost: " << s.db_host << "\n\t\tuser: " << s.db_user
-     << "\n\t\tname: " << s.db_name << "\n\t\tport: " << s.db_port << std::endl;
+     << "\n\tdatabase\n\t\thost: " << s.db_host()
+     << "\n\t\tuser: " << s.db_user() << "\n\t\tname: " << s.db_name()
+     << "\n\t\tport: " << s.db_port() << std::endl;
   return os;
 }
 
@@ -92,26 +104,49 @@ std::unique_ptr<Settings> Settings::Make(int argc, char *argv[]) {
   if (vm.count("key"))
     pt.put("ork.key", vm["key"].as<std::string>());
 
-  auto s = std::make_unique<Settings>(
-      // server
-      pt.get<std::int32_t>("ork.server.concurrency-hint", 1),
-      pt.get<std::uint64_t>("ork.server.body-limit", 100 * 1024),
-      pt.get<std::uint16_t>("ork.server.port", 8000),
-      pt.get<bool>("ork.server.ssl", false),
-      pt.get<std::string>("ork.server.ssl.crt", "server.crt"),
-      pt.get<std::string>("ork.server.ssl.key", "server.key"),
-      // db
-      pt.get<std::string>("ork.database.host", "localhost"),
-      pt.get<std::string>("ork.database.user", "root"),
-      pt.get<std::string>("ork.database.password", ""),
-      pt.get<std::string>("ork.database.name", "ork"),
-      pt.get<std::string>("ork.database.port", "3306"),
-      // env
-      GetPtEnv("ork.environment.xai-key", pt));
+  try {
+    auto s = std::make_unique<Settings>(
+        pt.get<std::int32_t>("ork.server.concurrency-hint", 1),
+        pt.get<std::uint64_t>("ork.server.body-limit", 100 * 1024),
+        pt.get<std::uint16_t>("ork.server.port", 8000),
+        pt.get<bool>("ork.server.ssl", false),
+        pt.get<std::string>("ork.server.ssl.crt", "server.crt"),
+        pt.get<std::string>("ork.server.ssl.key", "server.key"),
+        GetConnInfo(pt), GetPtEnv("ork.environment.xai-key", pt));
 
-  settings = s.get();
+    settings = s.get();
 
-  return s;
+    return s;
+  } catch (const boost::property_tree::ptree_bad_path &e) {
+    std::cerr << "Campo "
+              << e.path<boost::property_tree::ptree::path_type>().dump()
+              << " no definido en ork.xml" << std::endl;
+    std::exit(EXIT_FAILURE);
+  }
+}
+
+std::string_view Settings::db_host() const noexcept {
+  std::size_t pos = conninfo.find("host=") + 5,
+              n = conninfo.find("user=", 6) - pos;
+  return std::string_view{conninfo}.substr(pos, n);
+}
+
+std::string_view Settings::db_name() const noexcept {
+  std::size_t pos = conninfo.find("dbname=") + 7,
+              n = conninfo.find("port=") - pos;
+  return std::string_view{conninfo}.substr(pos, n);
+}
+
+std::string_view Settings::db_user() const noexcept {
+  std::size_t pos = conninfo.find("user=") + 5,
+              n = conninfo.find("dbname=") - pos;
+  return std::string_view{conninfo}.substr(pos, n);
+}
+
+std::string_view Settings::db_port() const noexcept {
+  std::size_t pos = conninfo.find("port=") + 5,
+              n = conninfo.find("password=") - pos;
+  return std::string_view{conninfo}.substr(pos, n);
 }
 
 } // namespace ork::conf

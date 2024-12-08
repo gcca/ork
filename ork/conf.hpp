@@ -15,9 +15,14 @@ public:
   const std::string crt;
   const std::string key;
 
-  const std::string db_host, db_user, db_password, db_name, db_port;
+  const std::string conninfo;
 
   const std::string xai_key;
+
+  std::string_view db_host() const noexcept;
+  std::string_view db_name() const noexcept;
+  std::string_view db_user() const noexcept;
+  std::string_view db_port() const noexcept;
 };
 
 extern Settings *settings;
